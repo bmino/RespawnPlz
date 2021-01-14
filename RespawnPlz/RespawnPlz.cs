@@ -6,18 +6,13 @@ using UnityEngine.Networking;
 
 namespace RespawnPlz {
     [BepInDependency("com.bepis.r2api")]
-    [BepInPlugin("com.bmino.RespawnPlz", "RespawnPlz", "1.0.0")]
+    [BepInPlugin("com.bmino.RespawnPlz", "RespawnPlz", "1.0.1")]
     public class RespawnPlz : BaseUnityPlugin {
 
         public static string CHAT_KEYWORD = "respawnplz";
 
         public void Awake() {
-
             Logger.LogMessage("Loaded RespawnPlz!");
-
-            On.RoR2.Networking.GameNetworkManager.OnClientConnect += (On.RoR2.Networking.GameNetworkManager.orig_OnClientConnect orig, RoR2.Networking.GameNetworkManager self, NetworkConnection conn) => {
-
-            };
 
             On.RoR2.Console.RunCmd += (On.RoR2.Console.orig_RunCmd orig, RoR2.Console self, RoR2.Console.CmdSender sender, string concommandName, List<string> userArgs) => {
                 orig(self, sender, concommandName, userArgs);
