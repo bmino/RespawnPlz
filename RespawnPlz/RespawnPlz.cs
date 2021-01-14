@@ -8,34 +8,41 @@ namespace RespawnPlz {
     [BepInDependency("com.bepis.r2api")]
     [BepInPlugin("com.bmino.RespawnPlz", "RespawnPlz", "1.0.0")]
     public class RespawnPlz : BaseUnityPlugin {
+
+        public static string CHAT_KEYWORD = "respawnplz";
+
         public void Awake() {
+
             Logger.LogMessage("Loaded RespawnPlz!");
 
-            On.RoR2.Console.RunCmd += (On.RoR2.Console.orig_RunCmd orig, RoR2.Console self, RoR2.Console.CmdSender sender, string concommandName, List<string> userArgs) => {
-                if (concommandName == "say" && userArgs.FirstOrDefault() == "respawnplz") {
-                    if (!isHost()) {
-                        Logger.LogMessage("Skipping respawn logic on non-host");
-                        return;
-                    }
-                    if (isDead(sender.networkUser)) {
-                        Logger.LogMessage("Cannot respawn a dead guy");
-                        return;
-                    }
-                    CharacterMaster master = sender.networkUser.master;
-                    ChatHelper.sendBroadcastChat($"That idiot, {sender.networkUser.userName}, is stuck again...");
-                    Stage.instance.RespawnCharacter(master); 
-                } else {
-                    orig(self, sender, concommandName, userArgs);
-                }
+            On.RoR2.Networking.GameNetworkManager.OnClientConnect += (On.RoR2.Networking.GameNetworkManager.orig_OnClientConnect orig, RoR2.Networking.GameNetworkManager self, NetworkConnection conn) => {
+
             };
-        }
 
-        public bool isHost() {
-            return NetworkServer.active && Stage.instance != null;
-        }
+            On.RoR2.Console.RunCmd += (On.RoR2.Console.orig_RunCmd orig, RoR2.Console self, RoR2.Console.CmdSender sender, string concommandName, List<string> userArgs) => {
+                orig(self, sender, concommandName, userArgs);
 
-        public bool isDead(NetworkUser player) {
-            return !player.master.hasBody;
+                // Only handle our specific trigger
+                if (concommandName != "say" || userArgs.FirstOrDefault() != RespawnPlz.CHAT_KEYWORD) {
+                    return;
+                };
+
+                // Server-only logic
+                if (!NetworkServer.active || Stage.instance == null) {
+                    return;
+                }
+
+                CharacterMaster senderMaster = sender.networkUser.master;
+                string senderUsername = sender.networkUser.userName;
+
+                if (senderMaster.IsDeadAndOutOfLivesServer()) {
+                    ChatHelper.sendBroadcastChat($"Won't respawn {senderUsername} because they are dead!");
+                    return;
+                }
+
+                ChatHelper.sendBroadcastChat($"That idiot, {senderUsername}, got stuck again...");
+                Stage.instance.RespawnCharacter(senderMaster);
+            };
         }
     }
 }
